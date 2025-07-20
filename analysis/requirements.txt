@@ -1,0 +1,10 @@
+langchain-huggingface
+langchain-community
+langchain-google-genai
+langchain-core
+langgraph
+python-dotenv
+faiss-cpu
+sentence-transformers
+transformers
+torch
