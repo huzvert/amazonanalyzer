@@ -14,7 +14,7 @@
     "value": "135-2497739-4700717",
     "domain": ".amazon.com",
     "path": "/",
-    "expires": 1784558753.407134,
+    "expires": 1788333698.53166,
     "httpOnly": false,
     "secure": true,
     "sameSite": "Lax"
@@ -24,7 +24,7 @@
     "value": "USD",
     "domain": ".amazon.com",
     "path": "/",
-    "expires": 1784558747.176623,
+    "expires": 1785309653.738971,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
@@ -34,19 +34,9 @@
     "value": "en_US",
     "domain": ".amazon.com",
     "path": "/",
-    "expires": 1784558747.17666,
+    "expires": 1785309653.739011,
     "httpOnly": false,
     "secure": false,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "sp-cdn",
-    "value": "\"L5Z9:PK\"",
-    "domain": ".amazon.com",
-    "path": "/",
-    "expires": 1784558708.215551,
-    "httpOnly": true,
-    "secure": true,
     "sameSite": "Lax"
   },
   {
@@ -54,7 +44,7 @@
     "value": "132-7688897-2728650",
     "domain": ".amazon.com",
     "path": "/",
-    "expires": 1784558753.406863,
+    "expires": 1785309697.690857,
     "httpOnly": false,
     "secure": true,
     "sameSite": "Lax"
@@ -64,7 +54,7 @@
     "value": "A5y9YCYdRUIsuoWeOWrgpNg",
     "domain": ".amazon-adsystem.com",
     "path": "/",
-    "expires": 1775058872.046298,
+    "expires": 1775031513.821022,
     "httpOnly": true,
     "secure": true,
     "sameSite": "None"
@@ -74,7 +64,7 @@
     "value": "0",
     "domain": ".amazon-adsystem.com",
     "path": "/",
-    "expires": 1787586872.046705,
+    "expires": 1788250713.821152,
     "httpOnly": true,
     "secure": true,
     "sameSite": "None"
@@ -107,16 +97,6 @@
     "expires": 1784558746.860621,
     "httpOnly": true,
     "secure": true,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "session-id-time",
-    "value": "2082787201l",
-    "domain": ".amazon.com",
-    "path": "/",
-    "expires": 1784558753.407006,
-    "httpOnly": false,
-    "secure": false,
     "sameSite": "Lax"
   },
   {
@@ -350,16 +330,6 @@
     "sameSite": "None"
   },
   {
-    "name": "KTPCACOOKIE",
-    "value": "YES",
-    "domain": ".pubmatic.com",
-    "path": "/",
-    "expires": 1753109151.044577,
-    "httpOnly": false,
-    "secure": true,
-    "sameSite": "None"
-  },
-  {
     "name": "KADUSERCOOKIE",
     "value": "197CA6C0-5193-4B88-9F62-554E93135BD2",
     "domain": ".pubmatic.com",
@@ -390,43 +360,53 @@
     "sameSite": "None"
   },
   {
-    "name": "session-token",
-    "value": "eTFBLuwblzceipFpoDaBCgF0ej4Mv/33hQBg+JFmk53jOaTCvGfFDUby9ePQGNsf/BMQV1e7SWIQJ/LWJ9RoIZNPp3PIQK//l6TcLs/OkK2pOUP1en4u2FwjmWK5EuCykw+FfiZNcZvkfMha/kXvBKSfWVLZm9DLUcAOVdVUycY6B7F/6ytXZHuhmfTa6WxGFb974R1wR4vMnrM2rGNGnqO8ZvAgzCtd9huj2m4fr1lKrkk3K2VbjFPNtFc7e+OkEJIgjdAds9/rdqPhnGgTHvC69GNxV1NfoE1X7cepP9iVrmhhmyS4XZay7eU7JRMwIGBYB+eOe0FqcGsMYPNEyBkX36URzCWi84euhsm3yUEhctWynUkI5h0KgnJi4nx7",
+    "name": "sp-cdn",
+    "value": "\"L5Z9:PK\"",
     "domain": ".amazon.com",
     "path": "/",
-    "expires": 1784562698.847925,
-    "httpOnly": false,
+    "expires": 1785309538.244034,
+    "httpOnly": true,
     "secure": true,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "x-main",
-    "value": "\"jQmQscUALoW8r?9@cCig3urNj3YqYfKHL79quvoD?vpJmdB4fol7tLq8q1dHPbNm\"",
-    "domain": ".amazon.com",
-    "path": "/",
-    "expires": 1784562698.848286,
-    "httpOnly": false,
-    "secure": true,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "csm-hit",
-    "value": "tb:s-5C00WE4DWFZ4D0AGSRSD|1753026869827&t:1753026871298&adb:adblk_no",
-    "domain": "www.amazon.com",
-    "path": "/",
-    "expires": 1783266871,
-    "httpOnly": false,
-    "secure": false,
     "sameSite": "Lax"
   },
   {
     "name": "rxc",
-    "value": "ACW8E8sq7yYACvvH81o",
+    "value": "ACMbm/0/o75Nh5XBs3Y",
     "domain": "www.amazon.com",
     "path": "/",
-    "expires": 1753113272.186822,
+    "expires": 1753859974.926911,
     "httpOnly": false,
     "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "csm-hit",
+    "value": "tb:s-VFV4GXB30MYR5WFDBCQY|1753773697873&t:1753773698073&adb:adblk_no",
+    "domain": "www.amazon.com",
+    "path": "/",
+    "expires": 1784013698,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "session-id-time",
+    "value": "2082787201l",
+    "domain": ".amazon.com",
+    "path": "/",
+    "expires": 1788333698.532089,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "session-token",
+    "value": "sGX9QzCZyl6aTpLDl8+8nWJIAp+D+YTg2eQNytecvp8siCe8RGFX2DEo0pmKU6Q2gl9LCT/CJiNwM9Vi34IDKdH8HKd0ac+LzXeoioOwzYK74tLBxNFDVg+ocWCnYe2iUr6uSLVLyvx22Ryux6N2YmT0b12pG+il+Od9d5w6rxPcbBqVYeH1adz6MU/JHAo+jA1RDi61LVuVNhT/sMkF5GUr4+HKzte0KMbT95Ss+eXdhUZ7UtWFop7PEhFpjtDWuQpApGcYMnXvuW9t4gVW54wO/9VFhLE9CnXF0ElY2ISXvXmCZfdR2XkM5mNwkdoch0fP0V8D2KU2+OkDvBrBLW8fc/hPTQbx",
+    "domain": ".amazon.com",
+    "path": "/",
+    "expires": 1788333698.532268,
+    "httpOnly": true,
+    "secure": true,
     "sameSite": "Lax"
   }
 ]

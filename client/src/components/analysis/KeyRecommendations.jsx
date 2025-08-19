@@ -3,16 +3,16 @@ import React from "react";
 const KeyRecommendations = ({ recommendations = [] }) => {
   // Ensure recommendations is an array
   const safeRecommendations = Array.isArray(recommendations) ? recommendations : [];
-  
+
   // Check if we have any recommendations to display
   if (safeRecommendations.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow p-6 mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-6 tracking-tight">
           Key Recommendations for Improvement
         </h2>
-        <div className="bg-yellow-50 p-4 rounded">
-          <p className="text-yellow-700 text-center">
+        <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+          <p className="text-yellow-700 text-center text-sm">
             No specific recommendations available for this product.
           </p>
         </div>
@@ -104,29 +104,27 @@ const KeyRecommendations = ({ recommendations = [] }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">
+    <div className="bg-white border border-gray-100 rounded-2xl shadow p-6 mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-6 tracking-tight">
         Key Recommendations for Improvement
       </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
         {safeRecommendations.map((recommendation, index) => (
           <div
             key={index}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex items-start"
+            className="border border-gray-100 rounded-xl p-5 bg-gray-50 hover:shadow transition-shadow flex items-start gap-4"
           >
-            <div className="mr-4 mt-1">{getRecommendationIcon(index)}</div>
+            <div className="mt-1">{getRecommendationIcon(index)}</div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-2">
+              <h3 className="font-semibold text-gray-800 mb-1 text-base">
                 Recommendation {index + 1}
               </h3>
-              <p className="text-gray-600">{recommendation}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">{recommendation}</p>
             </div>
           </div>
         ))}
       </div>
-
-      <div className="mt-6 text-sm text-gray-500 italic text-center">
+      <div className="mt-7 text-xs text-gray-400 italic text-center">
         Recommendations are based on competitive analysis and customer reviews
       </div>
     </div>

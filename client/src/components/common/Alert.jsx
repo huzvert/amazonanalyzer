@@ -4,9 +4,9 @@ const Alert = ({ type = "info", title, message, onClose }) => {
   // Define classes based on alert type
   const alertClasses = {
     info: {
-      containerClass: "bg-blue-50 border-blue-500",
+      containerClass: "bg-blue-50 border border-blue-200 shadow-sm",
       iconClass: "text-blue-500",
-      titleClass: "text-blue-800",
+      titleClass: "text-blue-900",
       messageClass: "text-blue-700",
       icon: (
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -19,9 +19,9 @@ const Alert = ({ type = "info", title, message, onClose }) => {
       ),
     },
     success: {
-      containerClass: "bg-green-50 border-green-500",
+      containerClass: "bg-green-50 border border-green-200 shadow-sm",
       iconClass: "text-green-500",
-      titleClass: "text-green-800",
+      titleClass: "text-green-900",
       messageClass: "text-green-700",
       icon: (
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -34,9 +34,9 @@ const Alert = ({ type = "info", title, message, onClose }) => {
       ),
     },
     warning: {
-      containerClass: "bg-yellow-50 border-yellow-500",
+      containerClass: "bg-yellow-50 border border-yellow-200 shadow-sm",
       iconClass: "text-yellow-500",
-      titleClass: "text-yellow-800",
+      titleClass: "text-yellow-900",
       messageClass: "text-yellow-700",
       icon: (
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -49,9 +49,9 @@ const Alert = ({ type = "info", title, message, onClose }) => {
       ),
     },
     error: {
-      containerClass: "bg-red-50 border-red-500",
+      containerClass: "bg-red-50 border border-red-200 shadow-sm",
       iconClass: "text-red-500",
-      titleClass: "text-red-800",
+      titleClass: "text-red-900",
       messageClass: "text-red-700",
       icon: (
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -69,44 +69,34 @@ const Alert = ({ type = "info", title, message, onClose }) => {
 
   return (
     <div
-      className={`border-l-4 p-4 mb-4 rounded ${currentType.containerClass}`}
+      className={`p-4 mb-4 rounded-xl flex items-start gap-3 ${currentType.containerClass}`}
     >
-      <div className="flex items-start">
-        <div className={`flex-shrink-0 ${currentType.iconClass}`}>
-          {currentType.icon}
-        </div>
-        <div className="ml-3">
-          {title && (
-            <h3 className={`text-sm font-medium ${currentType.titleClass}`}>
-              {title}
-            </h3>
-          )}
-          <div className={`text-sm ${currentType.messageClass}`}>{message}</div>
-        </div>
-        {onClose && (
-          <div className="ml-auto pl-3">
-            <div className="-mx-1.5 -my-1.5">
-              <button
-                onClick={onClose}
-                className={`inline-flex rounded-md p-1.5 ${currentType.iconClass} hover:bg-${type}-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${type}-500`}
-              >
-                <span className="sr-only">Dismiss</span>
-                <svg
-                  className="h-5 w-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
+      <div className={`flex-shrink-0 mt-0.5 ${currentType.iconClass}`}>{currentType.icon}</div>
+      <div className="flex-1 min-w-0">
+        {title && (
+          <h3 className={`text-sm font-semibold ${currentType.titleClass} mb-0.5`}>{title}</h3>
         )}
+        <div className={`text-sm ${currentType.messageClass}`}>{message}</div>
       </div>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className={`ml-2 rounded-full p-1.5 transition-colors duration-150 ${currentType.iconClass} hover:bg-opacity-10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${type}-500`}
+          aria-label="Dismiss"
+        >
+          <svg
+            className="h-5 w-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };

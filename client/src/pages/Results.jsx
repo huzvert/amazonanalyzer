@@ -10,6 +10,7 @@ import KeyRecommendations from "../components/analysis/KeyRecommendations";
 import ShareAnalysis from "../components/analysis/ShareAnalysis";
 import Loader from "../components/common/Loader";
 import Button from "../components/common/Button";
+import { motion } from "framer-motion";
 import useProtectedNavigation from "../hooks/useProtectedNavigation";
 import { generateAndDownloadPDF } from "../utils/pdfGenerator";
 
@@ -218,8 +219,7 @@ const Results = () => {
 
     console.log(`Auto-export FINAL DECISION value: ${finalAutoExportValue}`);
     console.log(
-      `Auto-export analysis status: ${
-        currentAnalysis ? "loaded" : "not loaded"
+      `Auto-export analysis status: ${currentAnalysis ? "loaded" : "not loaded"
       }`
     );
 
@@ -418,11 +418,10 @@ const Results = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`${
-                  activeTab === tab
+                className={`${activeTab === tab
                     ? "border-primary-500 text-primary-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
               >
                 {tab}
               </button>
@@ -433,9 +432,8 @@ const Results = () => {
         {/* Auto-export PDF indicator */}
         <div className="text-xs text-gray-500 flex items-center">
           <span
-            className={`inline-block w-3 h-3 rounded-full mr-2 ${
-              userPreferences.autoExportPdf ? "bg-green-500" : "bg-red-500"
-            }`}
+            className={`inline-block w-3 h-3 rounded-full mr-2 ${userPreferences.autoExportPdf ? "bg-green-500" : "bg-red-500"
+              }`}
           ></span>
           Auto PDF: {userPreferences.autoExportPdf ? "On" : "Off"}
         </div>
@@ -445,175 +443,205 @@ const Results = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Analysis Results: {asin}
-        </h1>{" "}
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <span role="img" aria-label="report">📊</span> Analysis Results: {asin}
+        </h1>
         <div className="flex items-center space-x-4">
           <ShareAnalysis analysisData={currentAnalysis} asin={asin} />
-
-          <Button
-            onClick={handleCopyResults}
-            label={copySuccess ? "Copied!" : "Copy JSON"}
-            variant={copySuccess ? "success" : "primary"}
-            size="sm"
-          />
+          <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.97 }}>
+            <Button
+              onClick={handleCopyResults}
+              label={copySuccess ? "Copied!" : "Copy JSON"}
+              variant={copySuccess ? "success" : "primary"}
+              size="sm"
+            />
+          </motion.div>
         </div>
       </div>
-      <TabNavigation />{" "}
+      <TabNavigation />
       {activeTab === "summary" && (
         <>
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Product Summary
-            </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-2xl shadow p-6 mb-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">📝</span>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Product Summary</h2>
+            </div>
             {product_summary ? (
               <>
                 <div className="mb-4">
-                  <h3 className="font-medium text-gray-700">Description</h3>
-                  <p className="text-gray-600">
+                  <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                    <span className="text-lg">📦</span> Description
+                  </h3>
+                  <p className="text-gray-700 text-lg leading-relaxed">
                     {product_summary.description || "No description available"}
                   </p>
                 </div>
                 <div className="mb-4">
-                  <h3 className="font-medium text-gray-700">Main Problems</h3>
-                  <p className="text-gray-600">
-                    {product_summary.main_problems ||
-                      "No main problems identified"}
+                  <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                    <span className="text-lg">⚠️</span> Main Problems
+                  </h3>
+                  <p className="text-gray-700 text-base">
+                    {product_summary.main_problems || "No main problems identified"}
                   </p>
                 </div>
               </>
             ) : (
-              <p className="text-yellow-600">
-                Product summary data is missing or incomplete.
-              </p>
+              <p className="text-yellow-600">Product summary data is missing or incomplete.</p>
             )}
-          </div>
-
-          {/* Main Product Analysis */}
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Main Product Analysis
-          </h2>
-          {main_product ? (
-            <>
-              <ProsCons
-                pros={main_product.pros || []}
-                cons={main_product.cons || []}
-                title={`Product Pros & Cons (ASIN: ${asin})`}
-              />
-
-              {/* Sentiment Chart */}
-              <SentimentChart
-                mainProduct={main_product}
-                competitors={competitors || []}
-              />
-            </>
-          ) : (
-            <div className="bg-yellow-50 p-4 rounded mb-6">
-              <p className="text-yellow-700">
-                Main product analysis data is missing or incomplete.
-              </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">🔍</span>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Main Product Analysis</h2>
             </div>
-          )}
+            {main_product ? (
+              <>
+                <ProsCons
+                  pros={main_product.pros || []}
+                  cons={main_product.cons || []}
+                  title={`Product Pros & Cons (ASIN: ${asin})`}
+                />
+                <SentimentChart
+                  mainProduct={main_product}
+                  competitors={competitors || []}
+                />
+              </>
+            ) : (
+              <div className="bg-yellow-50 p-4 rounded mb-6">
+                <p className="text-yellow-700">Main product analysis data is missing or incomplete.</p>
+              </div>
+            )}
+          </motion.div>
         </>
-      )}{" "}
+      )}
       {activeTab === "competitors" && (
         <>
           {competitors && competitors.length > 0 ? (
             <>
-              <CompetitorComparison
-                mainProduct={main_product || {}}
-                competitors={competitors}
-              />
-
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Competitor Breakdown
-              </h2>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mb-8"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">📊</span>
+                  <h2 className="text-xl font-bold text-gray-900 tracking-tight">Competitor Comparison</h2>
+                </div>
+                <CompetitorComparison
+                  mainProduct={main_product || {}}
+                  competitors={competitors}
+                />
+              </motion.div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">🤝</span>
+                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Competitor Breakdown</h2>
+              </div>
               {competitors.map((competitor, index) => (
-                <div key={index} className="mb-6">
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.05 * index }}
+                  className="mb-6"
+                >
                   <ProsCons
                     pros={competitor.pros || []}
                     cons={competitor.cons || []}
-                    title={`Competitor: ${
-                      competitor.identifier || `#${index + 1}`
-                    }`}
+                    title={`Competitor: ${competitor.identifier || `#${index + 1}`}`}
                   />
-                </div>
+                </motion.div>
               ))}
             </>
           ) : (
             <div className="bg-yellow-50 p-4 rounded mb-6">
-              <p className="text-yellow-700">
-                No competitor data available for this product.
-              </p>
+              <p className="text-yellow-700">No competitor data available for this product.</p>
             </div>
           )}
         </>
-      )}{" "}
+      )}
       {activeTab === "recommendations" && (
         <>
-          {key_changes_for_sales && key_changes_for_sales.length > 0 ? (
-            <KeyRecommendations recommendations={key_changes_for_sales} />
-          ) : (
-            <div className="bg-yellow-50 p-4 rounded mb-6">
-              <p className="text-yellow-700">
-                No recommendation data available for this product.
-              </p>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">🧠</span>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Key Recommendations</h2>
             </div>
-          )}
+            {key_changes_for_sales && key_changes_for_sales.length > 0 ? (
+              <KeyRecommendations recommendations={key_changes_for_sales} />
+            ) : (
+              <div className="bg-yellow-50 p-4 rounded mb-6">
+                <p className="text-yellow-700">No recommendation data available for this product.</p>
+              </div>
+            )}
+          </motion.div>
         </>
-      )}{" "}
+      )}
       {activeTab === "details" && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Complete Report
-          </h2>
-
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white rounded-2xl shadow p-6 mb-8"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl">📄</span>
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Complete Report</h2>
+          </div>
           {currentAnalysis.complete_report ? (
             <>
               <div className="mb-4">
-                <h3 className="font-medium text-gray-700">Product Analysis</h3>
-                <p className="text-gray-600">
-                  {currentAnalysis.complete_report.product_analysis ||
-                    "No detailed product analysis available."}
-                </p>
-              </div>
-              <div className="mb-4">
-                <h3 className="font-medium text-gray-700">
-                  Competitor Analysis
+                <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                  <span className="text-lg">📦</span> Product Analysis
                 </h3>
-                <p className="text-gray-600">
-                  {currentAnalysis.complete_report.competitor_analysis ||
-                    "No detailed competitor analysis available."}
+                <p className="text-gray-700 text-base">
+                  {currentAnalysis.complete_report.product_analysis || "No detailed product analysis available."}
                 </p>
               </div>
               <div className="mb-4">
-                <h3 className="font-medium text-gray-700">Recommendations</h3>
-                <p className="text-gray-600">
-                  {currentAnalysis.complete_report.recommendations ||
-                    "No detailed recommendations available."}
+                <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                  <span className="text-lg">📊</span> Competitor Analysis
+                </h3>
+                <p className="text-gray-700 text-base">
+                  {currentAnalysis.complete_report.competitor_analysis || "No detailed competitor analysis available."}
+                </p>
+              </div>
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                  <span className="text-lg">🧠</span> Recommendations
+                </h3>
+                <p className="text-gray-700 text-base">
+                  {currentAnalysis.complete_report.recommendations || "No detailed recommendations available."}
                 </p>
               </div>
             </>
           ) : (
             <div className="bg-yellow-50 p-4 rounded mb-6">
-              <p className="text-yellow-700">
-                Detailed report data is missing or incomplete.
-              </p>
+              <p className="text-yellow-700">Detailed report data is missing or incomplete.</p>
             </div>
           )}
-
-          {/* Add raw JSON button for debugging */}
           <div className="mt-8 border-t pt-4">
             <details className="text-sm">
-              <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                View Raw Analysis Data (Debug)
-              </summary>
-              <pre className="mt-2 bg-gray-100 p-3 rounded text-xs overflow-auto max-h-96">
-                {JSON.stringify(currentAnalysis, null, 2)}
-              </pre>
+              <summary className="cursor-pointer text-blue-600 hover:text-blue-800">View Raw Analysis Data (Debug)</summary>
+              <pre className="mt-2 bg-gray-100 p-3 rounded text-xs overflow-auto max-h-96">{JSON.stringify(currentAnalysis, null, 2)}</pre>
             </details>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

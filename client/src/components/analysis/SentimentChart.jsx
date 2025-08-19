@@ -23,8 +23,8 @@ const SentimentChart = ({ mainProduct, competitors }) => {
   // Defensive check for missing data
   if (!mainProduct || !mainProduct.pros || !mainProduct.cons) {
     return (
-      <div className="bg-yellow-50 p-4 rounded mb-6">
-        <p className="text-yellow-700">
+      <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 mb-6">
+        <p className="text-yellow-700 text-sm">
           Competitive analysis data is incomplete or missing.
         </p>
       </div>
@@ -34,8 +34,8 @@ const SentimentChart = ({ mainProduct, competitors }) => {
   // Filter out any competitors with incomplete data
   const validCompetitors = Array.isArray(competitors)
     ? competitors.filter(
-        (comp) => comp && Array.isArray(comp.pros) && Array.isArray(comp.cons)
-      )
+      (comp) => comp && Array.isArray(comp.pros) && Array.isArray(comp.cons)
+    )
     : [];
 
   // Extract main product data with safety checks
@@ -124,38 +124,36 @@ const SentimentChart = ({ mainProduct, competitors }) => {
     },
   };
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+    <div className="bg-white border border-gray-100 rounded-2xl shadow p-6 mb-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-5 tracking-tight">
         Competitive Strength Analysis
       </h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         <div>
           <div className="text-center mb-4">
             <div className="text-3xl font-bold text-primary-600">
               {Math.round(strengthScores[0] * 10) / 10}/10
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-xs text-gray-500">
               Your Product Strength Score
             </div>
           </div>
-
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Product Strengths:</span>
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-xs text-gray-500">Product Strengths:</span>
+              <span className="text-xs font-semibold text-gray-800">
                 {mainProductProsCount}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Product Weaknesses:</span>
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-xs text-gray-500">Product Weaknesses:</span>
+              <span className="text-xs font-semibold text-gray-800">
                 {mainProductConsCount}
               </span>
             </div>
             {topCompetitors.length > 0 && (
               <div className="mt-4 pt-4 border-t">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2">
                   Competitor Comparison
                 </h4>
                 {topCompetitors.map((comp, idx) => (
@@ -163,10 +161,10 @@ const SentimentChart = ({ mainProduct, competitors }) => {
                     key={idx}
                     className="flex justify-between items-center mb-1"
                   >
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-gray-500">
                       Competitor {idx + 1} Score:
                     </span>
-                    <span className="text-xs font-medium text-gray-800">
+                    <span className="text-xs font-semibold text-gray-800">
                       {Math.round(strengthScores[idx + 1] * 10) / 10}/10
                     </span>
                   </div>
@@ -175,8 +173,7 @@ const SentimentChart = ({ mainProduct, competitors }) => {
             )}
           </div>
         </div>
-
-        <div className="h-64 flex items-center justify-center">
+        <div className="h-64 bg-gray-50 rounded-xl flex items-center justify-center">
           <Bar data={data} options={options} />
         </div>
       </div>

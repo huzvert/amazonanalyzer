@@ -24,8 +24,8 @@ const CompetitorComparison = ({ mainProduct, competitors }) => {
   // Defensive check for missing data
   if (!mainProduct || !Array.isArray(competitors) || competitors.length === 0) {
     return (
-      <div className="bg-yellow-50 p-4 rounded mb-6">
-        <p className="text-yellow-700">
+      <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 mb-6">
+        <p className="text-yellow-700 text-sm">
           Competitor comparison data is incomplete or missing.
         </p>
       </div>
@@ -125,16 +125,15 @@ const CompetitorComparison = ({ mainProduct, competitors }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+    <div className="bg-white border border-gray-100 rounded-2xl shadow p-6 mb-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-5 tracking-tight">
         Competitor Comparison
       </h3>
-      <div className="h-80">
+      <div className="h-80 bg-gray-50 rounded-xl flex items-center justify-center mb-6">
         <Bar options={options} data={data} />
       </div>
-
-      <div className="mt-6">
-        <h4 className="font-medium text-gray-700 mb-2">Key Insights:</h4>
+      <div className="mt-4">
+        <h4 className="font-semibold text-gray-700 mb-2">Key Insights:</h4>
         <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
           {mainProductRatio > Math.max(...competitorRatios) ? (
             <li>
@@ -145,18 +144,16 @@ const CompetitorComparison = ({ mainProduct, competitors }) => {
           )}
           {competitorRatios.some((ratio) => ratio > mainProductRatio) && (
             <li>
-              Consider analyzing what makes{" "}
+              Consider analyzing what makes{' '}
               {safeCompetitors[
                 competitorRatios.indexOf(Math.max(...competitorRatios))
               ].identifier.substring(0, 15)}
               ... more positively received
             </li>
           )}
-
           {mainProductRatio < 50 && (
             <li>
-              Your product has more cons than pros, consider addressing key
-              issues
+              Your product has more cons than pros, consider addressing key issues
             </li>
           )}
         </ul>

@@ -46,11 +46,11 @@ const ShareAnalysis = ({ analysisData, asin }) => {
     <div className="relative">
       <button
         onClick={() => setIsShareMenuOpen(!isShareMenuOpen)}
-        className="flex items-center text-sm font-medium text-primary-600 hover:text-primary-800"
+        className="flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-800 px-3 py-2 rounded-lg bg-white border border-gray-100 shadow-sm transition-colors"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 mr-1"
+          className="h-5 w-5"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -63,16 +63,16 @@ const ShareAnalysis = ({ analysisData, asin }) => {
           />
         </svg>
         Share
-      </button>{" "}
+      </button>
       {isShareMenuOpen && (
-        <div className="absolute right-0 z-10 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+        <div className="absolute right-0 z-10 mt-2 w-52 rounded-xl bg-white py-2 shadow-lg border border-gray-100">
           <button
             onClick={copyToClipboard}
-            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-3"
+              className="h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -88,13 +88,13 @@ const ShareAnalysis = ({ analysisData, asin }) => {
           </button>
           <button
             onClick={exportAsPdf}
-            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
             disabled={isPdfLoading}
           >
             {isPdfLoading ? (
               <>
                 <svg
-                  className="animate-spin h-4 w-4 mr-3 text-red-500"
+                  className="animate-spin h-4 w-4 text-red-500"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -119,7 +119,7 @@ const ShareAnalysis = ({ analysisData, asin }) => {
               <>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 mr-3 text-red-500"
+                  className="h-4 w-4 text-red-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"

@@ -17,11 +17,20 @@ from dotenv import load_dotenv
 from utils.embedding_generator import generate_embeddings, sanitize_filename
 
 
+# Helper for debug logging to stderr
+def debug_log(message: str):
+    print(f"[DEBUG] {message}", file=sys.stderr)
+
+
+# Replace all print(...log...) with debug_log(...)
+
+
 # Load environment variables with improved path handling
 current_dir = os.path.dirname(os.path.abspath(__file__))
 env_path = os.path.join(current_dir, ".env")
 load_dotenv(dotenv_path=env_path)
 api_key = os.getenv("GOOGLE_API_KEY")
+
 
 # Define the state for our graph
 class AnalysisState(TypedDict):
@@ -32,187 +41,212 @@ class AnalysisState(TypedDict):
     asin: str  # Added to track the product ASIN
     keyword: str  # Added to track the search keyword
 
+
 # Functions to load FAISS indices
-def load_faiss_index(index_path: str):
-    """Load a pre-built FAISS index."""
+import shutil
+
+
+def load_faiss_index(index_path: str, force_rebuild=False, asin=None, keyword=None):
+    """Load a pre-built FAISS index, with dangerous deserialization allowed (safe for local trusted files). If loading fails, optionally auto-rebuild."""
     try:
-        return FAISS.load_local(index_path, embedding_model)
+        debug_log(f"Loading FAISS index: {index_path}")
+        return FAISS.load_local(
+            index_path, embedding_model, allow_dangerous_deserialization=True
+        )
     except Exception as e:
-        print(f"Error loading FAISS index from {index_path}: {str(e)}")
+        print(
+            f"[ERROR] Failed to load FAISS index from {index_path}: {str(e)}",
+            file=sys.stderr,
+        )
+        if force_rebuild and asin and keyword:
+            print(
+                f"[WARN] Deleting and regenerating vectorstore: {index_path}",
+                file=sys.stderr,
+            )
+            try:
+                if os.path.exists(index_path):
+                    shutil.rmtree(index_path)
+            except Exception as del_e:
+                print(
+                    f"[ERROR] Failed to delete vectorstore {index_path}: {del_e}",
+                    file=sys.stderr,
+                )
+            from utils.embedding_generator import generate_embeddings
+
+            regen_success = generate_embeddings(asin, keyword)
+            if regen_success:
+                try:
+                    debug_log(f"Retrying FAISS load after regeneration: {index_path}")
+                    return FAISS.load_local(
+                        index_path,
+                        embedding_model,
+                        allow_dangerous_deserialization=True,
+                    )
+                except Exception as e2:
+                    print(
+                        f"[ERROR] Still failed to load FAISS after regeneration: {e2}",
+                        file=sys.stderr,
+                    )
+            else:
+                print(
+                    f"[ERROR] Regeneration of vectorstore failed for {index_path}",
+                    file=sys.stderr,
+                )
         return None
 
+
 # Node 1: Product Analysis (only considers the product's own data)
-def analyze_product(state: AnalysisState) -> AnalysisState:
-    """Analyze only the product without considering competitors."""
-    # Get the ASIN from the state
+def analyze_product(state: AnalysisState, force_rebuild=False) -> AnalysisState:
     asin = state["asin"]
-    
-    # Construct path to the product FAISS index
+    keyword = state["keyword"]
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, ".."))
     data_dir = os.path.join(project_root, "data")
-    
     product_index_path = os.path.join(data_dir, f"{asin}_faiss")
-    product_index = load_faiss_index(product_index_path)
-    
+    product_index = load_faiss_index(
+        product_index_path, force_rebuild=force_rebuild, asin=asin, keyword=keyword
+    )
     if not product_index:
-        state["product_analysis"] = f"Error: Could not load product index for ASIN {asin}."
+        state["product_analysis"] = (
+            f"Error: Could not load product index for ASIN {asin}."
+        )
         return state
-    
-    # Retrieve relevant information from the vectorstore
     retriever = product_index.as_retriever(search_kwargs={"k": 5})
-    product_context = retriever.invoke("product features, specifications, customer reviews")
-    
-    # Define the analysis prompt
-    product_analysis_prompt = ChatPromptTemplate.from_template("""
-    You are a product analyst tasked with evaluating a product based on its details and reviews.
-    
-    Analyze the following product information and provide a comprehensive analysis:
-    
-    1. Identify the key features and specifications of the product
-    2. Summarize the positive aspects mentioned in reviews
-    3. Summarize the negative aspects mentioned in reviews
-    4. Identify potential improvements based on customer feedback
-    5. Evaluate the overall customer satisfaction
-    
-    Product context:
-    {context}
-    
-    Provide a detailed analysis that helps understand the product's strengths and weaknesses.
-    """)
-    
-    # Build the chain with Google Gemini model
+    product_context = retriever.invoke(
+        "product features, specifications, customer reviews"
+    )
+    debug_log(f"Product context for LLM: {product_context}")
+    if not product_context or (
+        isinstance(product_context, list) and not product_context
+    ):
+        state["product_analysis"] = "Error: No product context available for analysis."
+        return state
+    product_analysis_prompt = ChatPromptTemplate.from_template(
+        """
+        You are a product analyst tasked with evaluating a product based on its details and reviews.
+        Analyze the following product information and provide a comprehensive analysis:
+        1. Identify the key features and specifications of the product
+        2. Summarize the positive aspects mentioned in reviews
+        3. Summarize the negative aspects mentioned in reviews
+        4. Identify potential improvements based on customer feedback
+        5. Evaluate the overall customer satisfaction
+        Product context:
+        {context}
+        Provide a detailed analysis that helps understand the product's strengths and weaknesses.
+        """
+    )
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        google_api_key=api_key,
-        temperature=0
+        model="gemini-1.5-flash", google_api_key=api_key, temperature=0
     )
-
-    product_chain = (
-        product_analysis_prompt
-        | llm
-        | StrOutputParser()
-    )
-    
-    # Run the analysis
+    product_chain = product_analysis_prompt | llm | StrOutputParser()
     product_analysis = product_chain.invoke({"context": product_context})
+    if "Unable to determine" in product_analysis or "Placeholder" in product_analysis:
+        print("[WARN] LLM returned placeholder output for product analysis.")
     state["product_analysis"] = product_analysis
-    
     return state
 
+
 # Node 2: Competitor Analysis and Suggestions
-def analyze_competitors(state: AnalysisState) -> AnalysisState:
-    """Compare product with competitors and generate suggestions."""
-    # Get ASIN and keyword from the state
+def analyze_competitors(state: AnalysisState, force_rebuild=False) -> AnalysisState:
     asin = state["asin"]
     keyword = state["keyword"]
     safe_keyword = sanitize_filename(keyword)
-    
-    # Construct paths to product and competitor FAISS indices
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, ".."))
     data_dir = os.path.join(project_root, "data")
-    
     product_index_path = os.path.join(data_dir, f"{asin}_faiss")
     competitor_index_path = os.path.join(data_dir, f"{safe_keyword}_faiss")
-    
-    product_index = load_faiss_index(product_index_path)
-    competitor_index = load_faiss_index(competitor_index_path)
-    
+    product_index = load_faiss_index(
+        product_index_path, force_rebuild=force_rebuild, asin=asin, keyword=keyword
+    )
+    competitor_index = load_faiss_index(
+        competitor_index_path, force_rebuild=force_rebuild, asin=asin, keyword=keyword
+    )
     if not product_index or not competitor_index:
         state["competitor_analysis"] = "Error: Could not load indices."
         state["suggestions"] = "Error: Could not generate suggestions."
         return state
-    
-    # Define the competitor analysis prompt
-    competitor_analysis_prompt = ChatPromptTemplate.from_template("""
-    You are a competitive market analyst. You need to compare a product with its competitors and identify key differences.
-    
-    First, review the analysis of the main product:
-    {product_analysis}
-    
-    Now, analyze the competitor information:
-    {competitor_context}
-    
-    Provide a detailed analysis that:
-    1. Identifies unique features that competitors offer
-    2. Highlights areas where competitors are receiving positive reviews
-    3. Compares pricing and value proposition
-    4. Analyzes where competitors might be outperforming the main product
-    5. Identifies market gaps or opportunities
-    
-    Focus on actionable insights about what competitors are doing differently.
-    """)
-    
-    # Define the suggestions prompt
-    suggestions_prompt = ChatPromptTemplate.from_template("""
-    You are a product strategy consultant. Based on the product analysis and competitive analysis, provide strategic recommendations.
-    
-    Product analysis:
-    {product_analysis}
-    
-    Competitor analysis:
-    {competitor_analysis}
-    
-    Provide specific, actionable suggestions for:
-    1. Product improvements that would address customer pain points
-    2. Features that could be added to match or surpass competitors
-    3. Marketing angles that could highlight product strengths
-    4. Pricing or positioning strategies
-    5. Ways to better address customer needs identified in reviews
-    
-    Each suggestion should be specific, practical, and directly tied to insights from the analysis.
-    """
-    )
-    
-    # Retrieve relevant information from the competitor vectorstore
     competitor_retriever = competitor_index.as_retriever(search_kwargs={"k": 5})
-    competitor_context = competitor_retriever.invoke("competitor features, advantages, reviews")
-    
-    # Build the competitor analysis chain with Google Gemini model
+    competitor_context = competitor_retriever.invoke(
+        "competitor features, advantages, reviews"
+    )
+    debug_log(f"Competitor context for LLM: {competitor_context}")
+    if not competitor_context or (
+        isinstance(competitor_context, list) and not competitor_context
+    ):
+        state["competitor_analysis"] = (
+            "Error: No competitor context available for analysis."
+        )
+        state["suggestions"] = "Error: No competitor context available for suggestions."
+        return state
+    competitor_analysis_prompt = ChatPromptTemplate.from_template(
+        """
+        You are a competitive market analyst. You need to compare a product with its competitors and identify key differences.
+        First, review the analysis of the main product:
+        {product_analysis}
+        Now, analyze the competitor information:
+        {competitor_context}
+        Provide a detailed analysis that:
+        1. Identifies unique features that competitors offer
+        2. Highlights areas where competitors are receiving positive reviews
+        3. Compares pricing and value proposition
+        4. Analyzes where competitors might be outperforming the main product
+        5. Identifies market gaps or opportunities
+        Focus on actionable insights about what competitors are doing differently.
+        """
+    )
+    suggestions_prompt = ChatPromptTemplate.from_template(
+        """
+        You are a product strategy consultant. Based on the product analysis and competitive analysis, provide strategic recommendations.
+        Product analysis:
+        {product_analysis}
+        Competitor analysis:
+        {competitor_analysis}
+        Provide specific, actionable suggestions for:
+        1. Product improvements that would address customer pain points
+        2. Features that could be added to match or surpass competitors
+        3. Marketing angles that could highlight product strengths
+        4. Pricing or positioning strategies
+        5. Ways to better address customer needs identified in reviews
+        Each suggestion should be specific, practical, and directly tied to insights from the analysis.
+        """
+    )
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",
-        google_api_key=api_key,
-        temperature=0
+        model="gemini-1.5-flash", google_api_key=api_key, temperature=0
     )
-    
-    competitor_chain = (
-        competitor_analysis_prompt
-        | llm
-        | StrOutputParser()
+    competitor_chain = competitor_analysis_prompt | llm | StrOutputParser()
+    competitor_analysis = competitor_chain.invoke(
+        {
+            "product_analysis": state["product_analysis"],
+            "competitor_context": competitor_context,
+        }
     )
-    
-    # Run the competitor analysis
-    competitor_analysis = competitor_chain.invoke({
-        "product_analysis": state["product_analysis"],
-        "competitor_context": competitor_context
-    })
+    if (
+        "Placeholder" in competitor_analysis
+        or "Unable to determine" in competitor_analysis
+    ):
+        print("[WARN] LLM returned placeholder output for competitor analysis.")
     state["competitor_analysis"] = competitor_analysis
-    
-    # Build the suggestions chain
-    suggestions_chain = (
-        suggestions_prompt
-        | llm
-        | StrOutputParser()
+    suggestions_chain = suggestions_prompt | llm | StrOutputParser()
+    suggestions = suggestions_chain.invoke(
+        {
+            "product_analysis": state["product_analysis"],
+            "competitor_analysis": state["competitor_analysis"],
+        }
     )
-    
-    # Generate suggestions
-    suggestions = suggestions_chain.invoke({
-        "product_analysis": state["product_analysis"],
-        "competitor_analysis": state["competitor_analysis"]
-    })
     state["suggestions"] = suggestions
-    
     return state
+
 
 # Node 3: Final Report Generation
 def generate_final_report(state: AnalysisState) -> AnalysisState:
     """Generate a comprehensive final report combining all analyses with structured pros and cons."""
     asin = state["asin"]
     keyword = state["keyword"]
-    
+
     # Updated prompt for structured output with pros/cons for all products
-    final_report_prompt = ChatPromptTemplate.from_template("""
+    final_report_prompt = ChatPromptTemplate.from_template(
+        """
     You are creating a detailed product analysis report for ASIN: {asin} with search keyword: {keyword}.
     
     Based on the provided analyses, create a structured report that follows this EXACT FORMAT:
@@ -262,266 +296,194 @@ def generate_final_report(state: AnalysisState) -> AnalysisState:
     
     Identify at least 3-5 competitor products from the competitor analysis and provide pros and cons for each.
     Make sure your response is VALID JSON that can be parsed by Python's json.loads() function.
-    """)
-    
+    """
+    )
+
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-flash",  # Updated model name
         google_api_key=api_key,
-        temperature=0
+        temperature=0,
     )
-    
-    final_report_chain = (
-        final_report_prompt
-        | llm
-        | StrOutputParser()
-    )
-    
+
+    final_report_chain = final_report_prompt | llm | StrOutputParser()
+
     # Get the JSON-formatted report
-    json_report = final_report_chain.invoke({
-        "asin": asin,
-        "keyword": keyword,
-        "product_analysis": state["product_analysis"],
-        "competitor_analysis": state["competitor_analysis"],
-        "suggestions": state["suggestions"]
-    })
-    
-    # Store the JSON string in the state
-    state["final_report"] = json_report
+    json_report = final_report_chain.invoke(
+        {
+            "asin": asin,
+            "keyword": keyword,
+            "product_analysis": state["product_analysis"],
+            "competitor_analysis": state["competitor_analysis"],
+            "suggestions": state["suggestions"],
+        }
+    )
+
+    # --- Clean and parse JSON output ---
+    try:
+        result_clean = json_report.strip()
+        if result_clean.startswith("```json"):
+            result_clean = result_clean[7:]
+        if result_clean.endswith("```"):
+            result_clean = result_clean[:-3]
+        result_clean = "\n".join(
+            line
+            for line in result_clean.splitlines()
+            if not line.strip().startswith("//")
+        )
+        result_data = json.loads(result_clean)
+    except Exception:
+        result_data = {}
+    # --- Ensure all required fields ---
+    required_fields = {
+        "product_summary": {"description": "", "main_problems": ""},
+        "main_product": {"asin": asin, "pros": [], "cons": []},
+        "competitors": [],
+        "key_changes_for_sales": [],
+        "complete_report": {
+            "product_analysis": "",
+            "competitor_analysis": "",
+            "recommendations": "",
+        },
+    }
+    for key, val in required_fields.items():
+        if key not in result_data:
+            result_data[key] = val
+    state["final_report"] = json.dumps(result_data, indent=2)
     return state
 
+
 # Set up the LangGraph
-def build_graph():
-    """Build the LangGraph workflow."""
-    # Initialize the graph
+def build_graph(force_rebuild=False):
     graph = StateGraph(AnalysisState)
-    
-    # Add nodes
-    graph.add_node("analyze_product", analyze_product)
-    graph.add_node("analyze_competitors", analyze_competitors)
+    # Wrap nodes to pass force_rebuild
+    graph.add_node(
+        "analyze_product",
+        lambda state: analyze_product(state, force_rebuild=force_rebuild),
+    )
+    graph.add_node(
+        "analyze_competitors",
+        lambda state: analyze_competitors(state, force_rebuild=force_rebuild),
+    )
     graph.add_node("generate_final_report", generate_final_report)
-    
-    # Define the edges
     graph.add_edge("analyze_product", "analyze_competitors")
     graph.add_edge("analyze_competitors", "generate_final_report")
-    
-    # Set the entry point
     graph.set_entry_point("analyze_product")
-    
     return graph.compile()
 
-def main(asin: str, keyword: str, output_json=True):
+
+def main(asin: str, keyword: str, output_json=True, force_rebuild=False):
     """Main function to run the analysis process."""
-    if not output_json:  # Only print this for non-API usage
+    if not output_json:
         print(f"Starting analysis for ASIN: {asin} and keyword: {keyword}")
-    
-    # Initialize embedding model - using HuggingFace
     global embedding_model
     embedding_model = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
-    
-    # First, ensure embeddings exist by calling the generate_embeddings function
-    if not output_json:  # Only print this for non-API usage
+    if not output_json:
         print("Preparing vector embeddings...")
+    if force_rebuild:
+        # Delete vectorstores if they exist
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(current_dir, ".."))
+        data_dir = os.path.join(project_root, "data")
+        safe_keyword = sanitize_filename(keyword)
+        product_index_path = os.path.join(data_dir, f"{asin}_faiss")
+        competitor_index_path = os.path.join(data_dir, f"{safe_keyword}_faiss")
+        for path in [product_index_path, competitor_index_path]:
+            if os.path.exists(path):
+                debug_log(f"Deleting vectorstore: {path}")
+                shutil.rmtree(path)
     embedding_success = generate_embeddings(asin, keyword)
-    
     if not embedding_success:
         error_msg = "Failed to generate required embeddings. Analysis cannot proceed."
         if not output_json:
             print(f"Error: {error_msg}")
-        error_result = {
-            "error": True,
-            "message": error_msg
-        }
+        error_result = {"error": True, "message": error_msg}
         if output_json:
             print(json.dumps(error_result))
         return
-    
-    if not output_json:  # Only print this for non-API usage
+    if not output_json:
         print("Embeddings ready. Starting analysis...")
-    
-    # Initialize the state with the ASIN and keyword
     initial_state: AnalysisState = {
         "product_analysis": "",
         "competitor_analysis": "",
         "suggestions": "",
         "final_report": "",
         "asin": asin,
-        "keyword": keyword
+        "keyword": keyword,
     }
-    
-    # Build and run the graph
-    graph = build_graph()
+    graph = build_graph(force_rebuild=force_rebuild)
     result = graph.invoke(initial_state)
-    
-    # Save the JSON report
     safe_keyword = sanitize_filename(keyword)
     json_filename = f"{asin}_{safe_keyword}_analysis.json"
-    
     try:
-        # Clean the raw JSON string by removing code block markers if present
         raw_report = result["final_report"]
-        
-        # Remove markdown code block markers if present
-        if raw_report.startswith("```json"):
-            raw_report = raw_report[7:]  # Remove ```json
-        if raw_report.endswith("```"):
-            raw_report = raw_report[:-3]  # Remove ```
-            
-        # Remove any comment lines that start with //
-        cleaned_lines = [line for line in raw_report.splitlines() if not line.strip().startswith("//")]
-        raw_report = "\n".join(cleaned_lines)
-        
-        # Strip any leading/trailing whitespace
-        raw_report = raw_report.strip()
-        
-        # Now parse the cleaned JSON
         report_data = json.loads(raw_report)
-        
-        # Save the JSON to file with proper formatting
         with open(json_filename, "w") as f:
-            json.dump(report_data, f, indent=2)  # Use json.dump with indentation
-        
-        # If called from the API, just output the JSON
+            json.dump(report_data, f, indent=2)
         if output_json:
+            print("===BEGIN_JSON===")
             print(json.dumps(report_data))
+            print("===END_JSON===")
             return
-            
-        # Print a summary to the console for interactive use
         print(f"\n==== PRODUCT ANALYSIS SUMMARY FOR {asin} ====\n")
-        
         print("PRODUCT SUMMARY:")
         print(f"Description: {report_data['product_summary']['description']}")
         print(f"Main Problems: {report_data['product_summary']['main_problems']}")
-        
         print("\nMAIN PRODUCT PROS:")
-        for i, pro in enumerate(report_data['main_product']['pros'], 1):
+        for i, pro in enumerate(report_data["main_product"]["pros"], 1):
             print(f"{i}. {pro}")
-            
         print("\nMAIN PRODUCT CONS:")
-        for i, con in enumerate(report_data['main_product']['cons'], 1):
+        for i, con in enumerate(report_data["main_product"]["cons"], 1):
             print(f"{i}. {con}")
-        
         print("\nCOMPETITOR PRODUCTS:")
-        for i, competitor in enumerate(report_data['competitors'], 1):
+        for i, competitor in enumerate(report_data["competitors"], 1):
             print(f"\nCompetitor {i}:")
             print(f"Top Pros:")
-            for j, pro in enumerate(competitor['pros'][:3], 1):  # Show top 3 pros for brevity
+            for j, pro in enumerate(competitor["pros"][:3], 1):
                 print(f"  {j}. {pro}")
             print(f"Top Cons:")
-            for j, con in enumerate(competitor['cons'][:3], 1):  # Show top 3 cons for brevity
+            for j, con in enumerate(competitor["cons"][:3], 1):
                 print(f"  {j}. {con}")
-            
         print("\nKEY CHANGES NEEDED:")
-        for i, change in enumerate(report_data['key_changes_for_sales'], 1):
+        for i, change in enumerate(report_data["key_changes_for_sales"], 1):
             print(f"{i}. {change}")
-        
         print(f"\nFull JSON report saved to {json_filename}")
-        
-        # Also save a markdown version for human reading
-        md_filename = f"{asin}_{safe_keyword}_analysis.md"
-        with open(md_filename, "w") as f:
-            f.write(f"# Product Analysis Report for {asin}\n\n")
-            f.write(f"## Product Summary\n\n")
-            f.write(f"**Description**: {report_data['product_summary']['description']}\n\n")
-            f.write(f"**Main Problems**: {report_data['product_summary']['main_problems']}\n\n")
-            
-            f.write(f"## Main Product Analysis\n\n")
-            f.write(f"### Pros\n\n")
-            for pro in report_data['main_product']['pros']:
-                f.write(f"- {pro}\n")
-            
-            f.write(f"\n### Cons\n\n")
-            for con in report_data['main_product']['cons']:
-                f.write(f"- {con}\n")
-            
-            f.write(f"\n## Competitor Analysis\n\n")
-            for i, competitor in enumerate(report_data['competitors'], 1):
-                f.write(f"### Competitor {i}\n\n")
-                f.write(f"**Pros**:\n\n")
-                for pro in competitor['pros']:
-                    f.write(f"- {pro}\n")
-                f.write(f"\n**Cons**:\n\n")
-                for con in competitor['cons']:
-                    f.write(f"- {con}\n")
-                f.write("\n")
-                
-            f.write(f"\n## Key Changes for Improved Sales\n\n")
-            for change in report_data['key_changes_for_sales']:
-                f.write(f"- {change}\n")
-                
-            f.write(f"\n## Complete Report\n\n")
-            f.write(f"### Product Analysis\n\n")
-            f.write(f"{report_data['complete_report']['product_analysis']}\n\n")
-            
-            f.write(f"### Competitor Analysis\n\n")
-            f.write(f"{report_data['complete_report']['competitor_analysis']}\n\n")
-            
-            f.write(f"### Recommendations\n\n")
-            f.write(f"{report_data['complete_report']['recommendations']}\n\n")
-            
-        print(f"Human-readable report saved to {md_filename}")
-            
-    except json.JSONDecodeError as e:
-        error_msg = f"Warning: The report could not be parsed as JSON: {str(e)}"
-        print(error_msg)
-        
-        if output_json:
-            error_result = {
-                "error": True,
-                "message": error_msg,
-                "rawOutput": result["final_report"][:500]  # First 500 chars for debugging
-            }
-            print(json.dumps(error_result))
-            return
-            
-        print("First 200 characters of response:", result["final_report"][:200])
-        
-        # Try to clean up JSON before saving in the error case too
-        raw_report = result["final_report"]
-        if raw_report.startswith("```json"):
-            raw_report = raw_report[7:]
-        if raw_report.endswith("```"):
-            raw_report = raw_report[:-3]
-        # Remove any comment lines that start with //
-        cleaned_lines = [line for line in raw_report.splitlines() if not line.strip().startswith("//")]
-        raw_report = "\n".join(cleaned_lines)
-        raw_report = raw_report.strip()
-        
-        # Still try to save with .json extension
-        with open(json_filename, "w") as f:
-            f.write(raw_report)  # Save cleaned text
-            
-        print(f"\nCleaned output saved to {json_filename} (may not be valid JSON)")
+    except Exception as e:
+        print(f"Error saving or displaying report: {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
-    # Set up argument parser
     parser = argparse.ArgumentParser(description="Amazon Product Analysis Tool")
-    parser.add_argument('--asin', required=True, help='The Amazon ASIN to analyze')
-    parser.add_argument('--keyword', required=True, help='The search keyword for finding competitors')
-    parser.add_argument('--json', action='store_true', help='Output only JSON format (for API use)')
-    
-    # Parse arguments
+    parser.add_argument("--asin", required=True, help="The Amazon ASIN to analyze")
+    parser.add_argument(
+        "--keyword", required=True, help="The search keyword for finding competitors"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Output only JSON format (for API use)"
+    )
+    parser.add_argument(
+        "--force-rebuild",
+        action="store_true",
+        help="Force delete and rebuild vectorstores from MongoDB",
+    )
     args = parser.parse_args()
-    
-    # If no command line arguments, fall back to interactive mode
     if len(sys.argv) == 1:
-        # Get input from terminal
         print("====== Amazon Product Analysis Tool ======")
-        print("This tool will analyze a product and its competitors based on Amazon data.")
-        
-        # Get ASIN from user
+        print(
+            "This tool will analyze a product and its competitors based on Amazon data."
+        )
         asin = input("Enter the product ASIN: ")
         if not asin:
             print("Error: ASIN is required.")
             sys.exit(1)
-        
-        # Get keyword from user
         keyword = input("Enter the search keyword for finding competitors: ")
         if not keyword:
             print("Error: Search keyword is required.")
             sys.exit(1)
-            
-        # Run in interactive mode (not JSON-only output)
-        main(asin, keyword, output_json=False)
+        main(asin, keyword, output_json=False, force_rebuild=False)
     else:
-        # Run with command line arguments
-        main(args.asin, args.keyword, output_json=args.json)
+        main(
+            args.asin,
+            args.keyword,
+            output_json=args.json,
+            force_rebuild=args.force_rebuild,
+        )

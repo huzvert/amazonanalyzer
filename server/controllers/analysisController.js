@@ -157,7 +157,10 @@ const createAnalysis = async (req, res) => {
     const pythonScriptPath = path.resolve(
       __dirname,
       "../../analysis/src/RAG.py"
-    ); // Spawn a Python process with --json flag to get cleaner JSON output
+    );
+    // Log the Python command for debugging
+    console.log("[DEBUG] Spawning Python:", `python ${pythonScriptPath} --asin ${asin} --keyword ${keyword} --json`);
+    // --- PATCH: Use UTF-8 env and robust stdout buffering ---
     const pythonProcess = spawn("python", [
       pythonScriptPath,
       "--asin",
@@ -165,132 +168,60 @@ const createAnalysis = async (req, res) => {
       "--keyword",
       keyword,
       "--json",
-    ]);
-
-    let dataString = "";
-    let errorString = "";
-
-    // Collect data from script
-    pythonProcess.stdout.on("data", (data) => {
-      dataString += data.toString();
-    });
-
-    // Collect errors from script
-    pythonProcess.stderr.on("data", (data) => {
-      errorString += data.toString();
-      console.error(`Python Error: ${data}`);
-    });
-
-    // Handle script completion
-    pythonProcess.on("close", async (code) => {
-      if (code !== 0) {
-        console.error(`Python process exited with code ${code}`);
-        return res.status(500).json({
-          message: "Error running analysis script",
-          error: errorString,
-        });
+      "--force-rebuild"
+    ], {
+      env: {
+        ...process.env,
+        PYTHONUTF8: '1'
       }
+    });
 
-      try {
-        // Check if the output contains an error message in JSON format
-        if (dataString.includes('"error":true')) {
-          // Try to extract the error JSON
-          const errorMatch = dataString.match(/\{.*"error"\s*:\s*true.*\}/s);
-          if (errorMatch) {
-            const errorJson = JSON.parse(errorMatch[0]);
-            return res.status(500).json(errorJson);
-          }
-        }
+    let stdoutData = '';
+    let stderrData = '';
 
-        // Function to find the most likely complete JSON object in a string
-        const extractValidJson = (str) => {
-          // Look for the outermost JSON object
-          let depth = 0;
-          let startIndex = -1;
+    pythonProcess.stdout.on('data', (data) => {
+      stdoutData += data.toString();
+    });
 
-          for (let i = 0; i < str.length; i++) {
-            if (str[i] === "{") {
-              if (depth === 0) {
-                startIndex = i;
-              }
-              depth++;
-            } else if (str[i] === "}") {
-              depth--;
-              if (depth === 0 && startIndex !== -1) {
-                // Found a complete JSON object
-                try {
-                  const jsonCandidate = str.substring(startIndex, i + 1);
-                  // Test if it's valid JSON
-                  JSON.parse(jsonCandidate);
-                  return jsonCandidate;
-                } catch (e) {
-                  // Not valid JSON, continue searching
-                  continue;
-                }
-              }
-            }
-          }
+    pythonProcess.stderr.on('data', (data) => {
+      stderrData += data.toString();
+      console.error(`[PYTHON STDERR] ${data}`);
+    });
 
-          // If we couldn't find a valid JSON object, fall back to the last occurrence approach
-          const jsonStartPos = str.lastIndexOf("{");
-          const jsonEndPos = str.lastIndexOf("}");
+    pythonProcess.on('close', async (code) => {
+      console.log("🚨 Exit code:", code);
+      console.log("📤 Raw stdout:", stdoutData);
+      console.log("❗ stderr:", stderrData);
 
-          if (
-            jsonStartPos !== -1 &&
-            jsonEndPos !== -1 &&
-            jsonStartPos < jsonEndPos
-          ) {
-            return str.substring(jsonStartPos, jsonEndPos + 1);
-          }
-
-          return null;
-        };
-
-        // Try to extract valid JSON from the output
-        const validJson = extractValidJson(dataString);
-
-        if (!validJson) {
-          throw new Error("Could not find valid JSON in the output");
-        }
-
-        console.log("Extracted JSON:", validJson.substring(0, 100) + "..."); // Clean the JSON string before parsing
-        const cleanJsonString = validJson.trim();
+      // Extract JSON using BEGIN/END markers from Python output
+      const start = stdoutData.indexOf("===BEGIN_JSON===");
+      const end = stdoutData.indexOf("===END_JSON===");
+      if (start !== -1 && end !== -1) {
+        const jsonString = stdoutData.slice(start + 16, end).trim();
         let result;
         try {
-          // Try to parse the cleaned JSON
-          result = JSON.parse(cleanJsonString);
-
-          // Check if the result is an error response
-          if (result.error === true) {
-            console.log(
-              "Received error response from Python script:",
-              result.message
-            );
-            return res.status(500).json({
-              message: result.message || "Error from analysis script",
-              error: true,
-            });
-          }
-        } catch (jsonError) {
-          console.error("JSON parse error:", jsonError);
-          throw new Error(`Failed to parse JSON: ${jsonError.message}`);
+          result = JSON.parse(jsonString);
+        } catch (e) {
+          console.error("❌ JSON parsing failed:", e);
+          return res.status(500).json({ error: "Malformed JSON from Python" });
         }
-
+        // Fallbacks for missing fields
+        result.product_summary = result.product_summary || "⚠️ Field missing in AI response.";
+        result.main_product = result.main_product || "⚠️ Field missing in AI response.";
+        result.key_changes_for_sales = result.key_changes_for_sales || "⚠️ Field missing in AI response.";
+        result.complete_report = result.complete_report || "⚠️ Field missing in AI response.";
+        result.competitors = Array.isArray(result.competitors) ? result.competitors : [];
         // Save the analysis to the database
-        const newAnalysis = await Analysis.create({
+        await Analysis.create({
           user: req.user._id,
           asin,
           keyword,
           result,
         });
-
-        res.status(201).json(result);
-      } catch (error) {
-        console.error("Error saving analysis:", error);
-        res.status(500).json({
-          message: "Error processing analysis result",
-          error: error.message,
-        });
+        return res.status(201).json(result);
+      } else {
+        console.error("❌ JSON markers not found in Python output.");
+        return res.status(500).json({ error: "JSON markers not found in Python output." });
       }
     });
   } catch (error) {

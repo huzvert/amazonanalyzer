@@ -11,17 +11,15 @@ async function getCompetitorAsins(page, keyword, excludeAsin) {
     // Construct the search URL with sorting by popularity rank
     const searchUrl = getSearchUrl(keyword) + '&s=exact-aware-popularity-rank';
 
-    // Navigate to the search page with retry and screenshot for debugging
+    // Navigate to the search page with retry and error logging
     let retries = 3;
     for (let i = 0; i < retries; i++) {
         try {
             await page.goto(searchUrl, { timeout: 60000 });
             await page.waitForSelector('[data-asin]', { timeout: 30000 });
-            // Take a screenshot for debugging
-            await page.screenshot({ path: `debug-search-${Date.now()}.png` });
             break;
         } catch (e) {
-            console.log("Page load or selector timeout. Retrying...", e.message);
+            console.warn(`[WARN] Navigation failed for keyword '${keyword}' on attempt ${i + 1}`);
             if (i === retries - 1) throw e;
         }
     }

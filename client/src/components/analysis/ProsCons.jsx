@@ -6,16 +6,15 @@ const ProsCons = ({ pros = [], cons = [], title = "Pros & Cons" }) => {
   const safeCons = Array.isArray(cons) ? cons : [];
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="bg-white border border-gray-100 rounded-2xl shadow p-6 mb-6">
+      <h3 className="text-lg font-bold text-gray-900 mb-5 tracking-tight">{title}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Pros Section */}
         <div>
-          <h4 className="text-base font-medium text-green-700 mb-3 flex items-center">
+          <h4 className="text-base font-semibold text-green-700 mb-3 flex items-center gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
+              className="h-5 w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -27,7 +26,7 @@ const ProsCons = ({ pros = [], cons = [], title = "Pros & Cons" }) => {
             </svg>
             Pros
           </h4>
-          <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
+          <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
             {safePros.length > 0 ? (
               safePros.map((pro, index) => (
                 <li key={index} className="pl-2">
@@ -35,17 +34,16 @@ const ProsCons = ({ pros = [], cons = [], title = "Pros & Cons" }) => {
                 </li>
               ))
             ) : (
-              <li className="pl-2 text-gray-500 italic">No pros identified</li>
+              <li className="pl-2 text-gray-400 italic">No pros identified</li>
             )}
           </ul>
         </div>
-
         {/* Cons Section */}
         <div>
-          <h4 className="text-base font-medium text-red-700 mb-3 flex items-center">
+          <h4 className="text-base font-semibold text-red-700 mb-3 flex items-center gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
+              className="h-5 w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -57,7 +55,7 @@ const ProsCons = ({ pros = [], cons = [], title = "Pros & Cons" }) => {
             </svg>
             Cons
           </h4>
-          <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
+          <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
             {safeCons.length > 0 ? (
               safeCons.map((con, index) => (
                 <li key={index} className="pl-2">
@@ -65,7 +63,7 @@ const ProsCons = ({ pros = [], cons = [], title = "Pros & Cons" }) => {
                 </li>
               ))
             ) : (
-              <li className="pl-2 text-gray-500 italic">No cons identified</li>
+              <li className="pl-2 text-gray-400 italic">No cons identified</li>
             )}
           </ul>
         </div>

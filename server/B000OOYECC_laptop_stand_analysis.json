@@ -1,0 +1,98 @@
+{
+  "product_summary": {
+    "description": "Due to data unavailability, a detailed description cannot be provided.  This product is assumed to be a laptop stand based on the provided search keyword.",
+    "main_problems": "Due to data unavailability, a summary of key problems cannot be provided.  Potential problems could include poor ergonomics, instability, lack of adjustability, insufficient cooling, or poor build quality."
+  },
+  "main_product": {
+    "asin": "B000OOYECC",
+    "pros": [
+      "Placeholder Pro 1",
+      "Placeholder Pro 2",
+      "Placeholder Pro 3"
+    ],
+    "cons": [
+      "Placeholder Con 1",
+      "Placeholder Con 2",
+      "Placeholder Con 3"
+    ]
+  },
+  "competitors": [
+    {
+      "identifier": "Competitor 1 (Placeholder)",
+      "pros": [
+        "Placeholder Pro 1",
+        "Placeholder Pro 2",
+        "Placeholder Pro 3"
+      ],
+      "cons": [
+        "Placeholder Con 1",
+        "Placeholder Con 2",
+        "Placeholder Con 3"
+      ]
+    },
+    {
+      "identifier": "Competitor 2 (Placeholder)",
+      "pros": [
+        "Placeholder Pro 1",
+        "Placeholder Pro 2",
+        "Placeholder Pro 3"
+      ],
+      "cons": [
+        "Placeholder Con 1",
+        "Placeholder Con 2",
+        "Placeholder Con 3"
+      ]
+    },
+    {
+      "identifier": "Competitor 3 (Placeholder)",
+      "pros": [
+        "Placeholder Pro 1",
+        "Placeholder Pro 2",
+        "Placeholder Pro 3"
+      ],
+      "cons": [
+        "Placeholder Con 1",
+        "Placeholder Con 2",
+        "Placeholder Con 3"
+      ]
+    },
+    {
+      "identifier": "Competitor 4 (Placeholder)",
+      "pros": [
+        "Placeholder Pro 1",
+        "Placeholder Pro 2",
+        "Placeholder Pro 3"
+      ],
+      "cons": [
+        "Placeholder Con 1",
+        "Placeholder Con 2",
+        "Placeholder Con 3"
+      ]
+    },
+    {
+      "identifier": "Competitor 5 (Placeholder)",
+      "pros": [
+        "Placeholder Pro 1",
+        "Placeholder Pro 2",
+        "Placeholder Pro 3"
+      ],
+      "cons": [
+        "Placeholder Con 1",
+        "Placeholder Con 2",
+        "Placeholder Con 3"
+      ]
+    }
+  ],
+  "key_changes_for_sales": [
+    "Placeholder Change 1: Improve product description and images.",
+    "Placeholder Change 2: Gather and respond to customer reviews.",
+    "Placeholder Change 3: Optimize product listing for relevant keywords.",
+    "Placeholder Change 4: Offer competitive pricing and promotions.",
+    "Placeholder Change 5: Consider offering different sizes or styles."
+  ],
+  "complete_report": {
+    "product_analysis": "Due to data unavailability, a detailed product analysis cannot be provided.",
+    "competitor_analysis": "Due to data unavailability, a detailed competitor analysis cannot be provided.",
+    "recommendations": "Due to data unavailability, strategic recommendations cannot be provided.  Further investigation is needed to gather necessary data."
+  }
+}

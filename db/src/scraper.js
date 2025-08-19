@@ -167,36 +167,43 @@ app.post('/scrape', async (req, res) => {
 
             return (async () => {
                 try {
-                    // Get product description
-                    console.log(`\nDriver ${index % drivers.length + 1}: Collecting product description for ASIN: ${currentAsin}`);
-                    const productDescription = await getDescription(currentPage, currentAsin);
+                    // --- PATCH: Robust description scraping with fallback ---
+                    let productDescription = null;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        try {
+                            console.log(`\nDriver ${index % drivers.length + 1}: Collecting product description for ASIN: ${currentAsin} (attempt ${attempt + 1})`);
+                            productDescription = await getDescription(currentPage, currentAsin);
+                            if (productDescription) break;
+                        } catch (err) {
+                            console.warn(`Retrying description for ASIN ${currentAsin} after error: ${err.message}`);
+                            await currentPage.waitForTimeout(1000);
+                        }
+                    }
                     if (!productDescription) {
-                        console.warn(`⚠️ Skipping ASIN ${currentAsin} due to missing description`);
-                        return;
+                        console.warn(`⚠️ No description found for ASIN ${currentAsin}, storing fallback.`);
+                        productDescription = { asin: currentAsin, title: '', bulletPoints: '', timestamp: new Date() };
                     }
                     allDescriptions[currentAsin] = productDescription;
 
-                    // --- Improved review scraping ---
+                    // --- PATCH: Robust review scraping with fallback ---
                     let criticalReviews = [];
                     let positiveReviews = [];
                     try {
                         console.log(`\nDriver ${index % drivers.length + 1}: Collecting critical reviews for ASIN: ${currentAsin}`);
-                        await currentPage.waitForSelector('.review-text-content', { timeout: 15000 });
                         criticalReviews = await getCriticalReviews(currentPage, currentAsin, NUMBER_OF_CRITICAL_REVIEWS);
                     } catch (err) {
                         console.warn(`No critical reviews found for ASIN ${currentAsin}:`, err.message);
                     }
                     try {
                         console.log(`\nDriver ${index % drivers.length + 1}: Collecting positive reviews for ASIN: ${currentAsin}`);
-                        await currentPage.waitForSelector('.review-text-content', { timeout: 15000 });
                         positiveReviews = await getPositiveReviews(currentPage, currentAsin, NUMBER_OF_POSITIVE_REVIEWS);
                     } catch (err) {
                         console.warn(`No positive reviews found for ASIN ${currentAsin}:`, err.message);
                     }
 
-                    if (!criticalReviews.length && !positiveReviews.length) {
-                        console.warn(`⚠️ No reviews found for ASIN ${currentAsin}`);
-                    }
+                    // Fallback: always store arrays
+                    if (!Array.isArray(criticalReviews)) criticalReviews = [];
+                    if (!Array.isArray(positiveReviews)) positiveReviews = [];
 
                     allReviews[currentAsin] = {
                         critical: criticalReviews,
@@ -205,24 +212,18 @@ app.post('/scrape', async (req, res) => {
 
                     console.log(`Driver ${index % drivers.length + 1}: Collected ${criticalReviews.length} critical and ${positiveReviews.length} positive reviews for ASIN: ${currentAsin}`);
 
-                    // In scraper.js, add more detailed logging:
+                    // --- PATCH: Always store fallback product data ---
                     const productData = {
                         asin: currentAsin,
-                        title: productDescription.title,
-                        description: productDescription.bulletPoints,
+                        title: productDescription.title || '',
+                        description: productDescription.bulletPoints || '',
                         timestamp: new Date()
                     };
-
-                    // Add this log to see what's actually being stored
-                    //console.log(`About to store imageUrl for ${currentAsin}: ${productDescription.imageUrl}`);
-
-                    // Then proceed with your MongoDB operations - use descriptionsCollection instead
                     await descriptionsCollection.updateOne(
                         { asin: currentAsin },
                         { $set: productData },
                         { upsert: true }
                     );
-
                     console.log(`Driver ${index % drivers.length + 1}: Stored product data for ASIN: ${currentAsin}`);
 
                     // Store reviews in MongoDB
@@ -230,7 +231,6 @@ app.post('/scrape', async (req, res) => {
                         ...criticalReviews.map(review => ({ ...review, asin: currentAsin })),
                         ...positiveReviews.map(review => ({ ...review, asin: currentAsin }))
                     ];
-
                     if (allProductReviews.length > 0) {
                         const bulkOps = allProductReviews.map(review => ({
                             updateOne: {
@@ -239,17 +239,25 @@ app.post('/scrape', async (req, res) => {
                                 upsert: true
                             }
                         }));
-
                         await reviewsCollection.bulkWrite(bulkOps);
                         console.log(`Driver ${index % drivers.length + 1}: Stored ${allProductReviews.length} reviews for ASIN: ${currentAsin}`);
                     }
 
-                    // Save cookies for this driver
-                    await save_cookies();
+                    // --- PATCH: Save cookies after each scrape ---
+                    try {
+                        const cookies = await currentPage.context().cookies();
+                        const fs = require('fs');
+                        fs.writeFileSync('cookies.json', JSON.stringify(cookies, null, 2));
+                    } catch (cookieErr) {
+                        console.warn('Could not save cookies:', cookieErr.message);
+                    }
 
                     return { asin: currentAsin, success: true };
                 } catch (error) {
                     console.error(`Driver ${index % drivers.length + 1}: Error processing ASIN ${currentAsin}:`, error);
+                    // --- PATCH: Always store fallback data for failed ASINs ---
+                    allDescriptions[currentAsin] = { asin: currentAsin, title: '', bulletPoints: '', timestamp: new Date() };
+                    allReviews[currentAsin] = { critical: [], positive: [] };
                     return { asin: currentAsin, success: false, error: error.message };
                 }
             })();

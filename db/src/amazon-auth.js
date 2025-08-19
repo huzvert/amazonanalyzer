@@ -62,16 +62,8 @@ async function get_driver(options = {}) {
     const humanDelay = async (min = 500, max = 2000) => {
       await page.waitForTimeout(getRandomInt(min, max));
     };
-    // Helper: screenshot on failure
-    const screenshotOnFailure = async (action, filename) => {
-      try {
-        return await action();
-      } catch (err) {
-        await page.screenshot({ path: filename || `debug-failure-${Date.now()}.png` });
-        console.error(`Saved screenshot of failure to ${filename}`);
-        throw err;
-      }
-    };
+    // Helper: error logging on failure (screenshot removed)
+    // If you need to wrap an action for debug, use try/catch and log the error only.
 
     // Add helper method to save cookies
     const save_cookies = async () => {
@@ -100,7 +92,7 @@ async function get_driver(options = {}) {
       save_cookies,
       is_logged_in,
       humanDelay,
-      screenshotOnFailure,
+      // screenshotOnFailure removed
     };
   } catch (error) {
     await browser.close();
